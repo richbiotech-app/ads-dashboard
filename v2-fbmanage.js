@@ -270,6 +270,13 @@
     return n;
   }
 
+  function mgrList(p) { // ผู้ดูแลทุกคนในแดชบอร์ด (คนในสินค้านี้ขึ้นก่อน)
+    var a = [], b = [];
+    (window.FB_HIERARCHY || []).forEach(function (x) { x.pages.forEach(function (g) { var m = clean(g.manager); if (!m || m === '-') { return; } var L = x === p ? a : b; if (a.indexOf(m) < 0 && b.indexOf(m) < 0) { L.push(m); } else if (x === p && b.indexOf(m) >= 0) { b.splice(b.indexOf(m), 1); a.push(m); } }); });
+    return a.sort().concat(b.sort());
+  }
+  function mgrDL(list) { return '<datalist id="fmMgL">' + list.map(function (m) { return '<option value="' + esc(m) + '">'; }).join('') + '</datalist>'; }
+
   var A = null; // สถานะหน้าต่างเพิ่มบัญชี
   window.fbManage = {
     close: shut,
@@ -329,11 +336,11 @@
     },
     addPage: function () {
       var c = ctx(); if (!c.p) { return toast('เปิดหน้าสินค้าก่อนแล้วค่อยกดเพิ่มเพจ', true); }
-      var mg = []; c.p.pages.forEach(function (g) { if (g.manager && g.manager !== '-' && mg.indexOf(g.manager) < 0) { mg.push(g.manager); } });
+      var mg = mgrList(c.p);
       modal('เพิ่มเพจใหม่',
         '<div class="fm-where">สินค้า <b>' + esc(c.p.product) + '</b></div>' +
         '<label class="fm-f"><span>ชื่อเพจ</span><input id="fmPg" maxlength="80" placeholder="ชื่อเพจตามใน Facebook"></label>' +
-        '<label class="fm-f"><span>ผู้ดูแลเพจ</span><input id="fmMg" list="fmMgL" maxlength="40" placeholder="ยังไม่รู้ใส่ - ไว้ก่อน"><datalist id="fmMgL">' + mg.map(function (m) { return '<option value="' + esc(m) + '">'; }).join('') + '</datalist></label>' +
+        '<label class="fm-f"><span>ผู้ดูแลเพจ</span><input id="fmMg" list="fmMgL" maxlength="40" placeholder="เลือกจากรายชื่อ หรือพิมพ์ชื่อใหม่ (ยังไม่รู้ใส่ -)" onfocus="this.select()">' + mgrDL(mg) + '<small>กดช่องนี้จะมีรายชื่อผู้ดูแลที่มีอยู่ให้เลือก · พิมพ์ชื่อใหม่ได้เลย</small></label>' +
         '<label class="fm-f"><span>เบอร์โทร</span><input id="fmPh" maxlength="20" placeholder="-"></label><div id="fmRes"></div>',
         '<button class="fm-btn" onclick="fbManage.close()">ยกเลิก</button><button class="fm-btn fm-pri" onclick="fbManage._savePage()">เพิ่มเพจ</button>');
     },
@@ -361,7 +368,7 @@
       modal('แก้ไขข้อมูลเพจ',
         '<div class="fm-where">' + esc(c.p.product) + '</div>' +
         '<label class="fm-f"><span>ชื่อเพจ</span><input id="fmPg" maxlength="80" value="' + esc(c.pg.name) + '"></label>' +
-        '<label class="fm-f"><span>ผู้ดูแลเพจ</span><input id="fmMg" maxlength="40" value="' + esc(c.pg.manager || '-') + '"></label>' +
+        '<label class="fm-f"><span>ผู้ดูแลเพจ</span><input id="fmMg" list="fmMgL" maxlength="40" value="' + esc(c.pg.manager || '-') + '" placeholder="เลือกจากรายชื่อ หรือพิมพ์ชื่อใหม่" onfocus="this.select()">' + mgrDL(mgrList(c.p)) + '<small>กดช่องนี้จะมีรายชื่อผู้ดูแลที่มีอยู่ให้เลือก · พิมพ์ชื่อใหม่ได้เลย</small></label>' +
         '<label class="fm-f"><span>เบอร์โทร</span><input id="fmPh" maxlength="20" value="' + esc(c.pg.phone || '-') + '"></label>' + admin + '<div id="fmRes"></div>',
         '<button class="fm-btn" onclick="fbManage.close()">ยกเลิก</button><button class="fm-btn fm-pri" onclick="fbManage._saveEdit()">บันทึก</button>');
       A = { c: c, hs: hs };
