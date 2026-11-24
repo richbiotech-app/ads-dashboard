@@ -184,9 +184,14 @@
       P.slice().sort(function (a, b) { return b.flags.score - a.flags.score || b.w1.s - a.w1.s; }).map(function (m) {
         return '<tr><td><button class="wk-link" onclick="weeklyV2.go(' + jsq(m.p) + ')">' + esc(m.p) + '</button></td><td class="r"><b>' + short(m.w1.s) + '</b><small class="wk-' + ((m.sg || 0) >= 0 ? 'up' : 'dn') + '">' + (m.sg !== null ? arrowPc(m.sg) : '') + '</small></td>' +
           cell(m.flags.ads) + cell(m.flags.close) + cell(m.flags.aov) + cell(m.flags.run) + cell(m.flags.content) + '</tr>';
-      }).join('') + '</tbody></table></div></div>';
+      }).join('') + '</tbody></table></div>' +
+      '<div class="wk-hm">' + P.slice().sort(function (a, b) { return b.flags.score - a.flags.score || b.w1.s - a.w1.s; }).map(function (m) {
+        var sc = m.flags.score;
+        return '<button class="wk-hmr" onclick="weeklyV2.go(' + jsq(m.p) + ')"><div class="wk-hmh"><span class="wk-dot wk-' + (sc >= 3 ? 'bad' : sc === 2 ? 'warn' : 'good') + '"></span><b>' + esc(m.p) + '</b><span class="wk-hms">' + short(m.w1.s) + ' <small class="wk-' + ((m.sg || 0) >= 0 ? 'up' : 'dn') + '">' + (m.sg !== null ? arrowPc(m.sg) : '') + '</small></span></div>' +
+          '<div class="wk-hmg">' + hm('%ADS', m.flags.ads) + hm('% ปิด', m.flags.close) + hm('ยอด/บิล', m.flags.aov) + hm('แอดรัน', m.flags.run) + hm('คอนเทนต์', m.flags.content) + '</div></button>';
+      }).join('') + '</div></div>';
     // กราฟ
-    h += '<div class="wk-card wk-pad"><div class="wk-h2row"><h2>ยอดขายรายวัน</h2><span class="wk-legend"><i style="background:#2563EB"></i>สัปดาห์นี้ <i style="background:#CBD5E1"></i>สัปดาห์ก่อน <i class="ln"></i>%ADS</span></div><div style="position:relative;height:240px"><canvas id="wkChart"></canvas></div></div>';
+    h += '<div class="wk-card wk-pad"><div class="wk-h2row"><h2>ยอดขายรายวัน</h2><span class="wk-legend"><i style="background:#2563EB"></i>สัปดาห์นี้ <i style="background:#CBD5E1"></i>สัปดาห์ก่อน <i class="ln"></i>%ADS</span></div><div style="position:relative;height:240px" class="wk-chartbox"><canvas id="wkChart"></canvas></div></div>';
     // รายสินค้า
     h += '<h2 class="wk-h2">รายสินค้า</h2><div class="wk-prods">' + P.map(prodCard).join('') + '</div>';
     h += '<div class="wk-foot">ยอดขาย ออเดอร์ และค่าแอดที่คีย์ = CasperCall · คนทัก แคมเปญ และ ROAS รายแคมเปญ = Facebook · เป้า %ADS = หน้าเป้าประจำเดือน · % ปิด = ออเดอร์ ÷ คนทัก</div></div>';
@@ -215,6 +220,7 @@
       (bad.length ? '<div class="wk-cl"><b class="wk-dn">ควรลด / ปิด</b>' + bad.map(campLink).join('') + '</div>' : '') +
       '</div>';
   }
+  function hm(l, f) { return '<div class="wk-hmc wk-c-' + f.lv + '"><span>' + l + '</span><b>' + f.t + '</b></div>'; }
   function pid(p) { return 'wkp-' + encodeURIComponent(p).replace(/[^A-Za-z0-9]/g, ''); }
   function mini(l, v, s) { return '<div><span>' + l + '</span><b>' + v + '</b><small>' + s + '</small></div>'; }
   function drawChart(D) {
@@ -306,14 +312,20 @@
     '.wk-chips{display:flex;flex-wrap:wrap;gap:6px}.wk-chips button{border:1px solid #FCA5A5;background:#fff;color:#991B1B;border-radius:99px;padding:3px 10px;font:inherit;font-size:12px;font-weight:600;cursor:pointer}',
     '.wk-scroll{overflow-x:auto}.wk-t{width:100%;border-collapse:collapse;font-size:13px;min-width:820px}.wk-t th{padding:9px 12px;font-size:12px;font-weight:600;color:var(--mute);text-align:left;background:#F8FAFC;border-bottom:1px solid var(--line);white-space:nowrap}.wk-t td{padding:9px 12px;border-bottom:1px solid #EEF1F6;white-space:nowrap;vertical-align:middle}.wk-t .r{text-align:right}.wk-t td small{display:block;font-size:11px;color:var(--mute);margin-left:15px}.wk-t td.r small{margin-left:0}',
     '.wk-link{border:0;background:none;padding:0;font:inherit;font-weight:600;color:#1D4ED8;cursor:pointer;text-align:left}',
-    '.wk-h2{margin:6px 0 0!important}.wk-prods{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}',
+    '.wk-h2{margin:6px 0 0!important}.wk-prods{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(340px,100%),1fr));gap:12px}.wk-prods>*,.wk-kpis>*,.wk-hl>*,.wk-fix>*{min-width:0}.wk-wrap{max-width:100%;overflow-x:hidden}',
+    '.wk-hm{display:none}.wk-hmr{display:flex;flex-direction:column;gap:8px;width:100%;text-align:left;border:0;border-bottom:1px solid #EEF1F6;background:#fff;padding:12px 14px;font:inherit;color:var(--ink);cursor:pointer}.wk-hmh{display:flex;align-items:center;gap:6px}.wk-hmh b{flex:1;font-size:15px}.wk-hms{font-weight:700;font-size:14px}.wk-hms small{font-size:12px}',
+    '.wk-hmg{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}.wk-hmc{border-radius:8px;padding:5px 4px;text-align:center;display:flex;flex-direction:column;min-width:0}.wk-hmc span{font-size:10px;color:var(--mute);white-space:nowrap}.wk-hmc b{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.wk-c-bad{background:#FEE2E2}.wk-c-bad b{color:#B91C1C}.wk-c-warn{background:#FEF3C7}.wk-c-warn b{color:#B45309}.wk-c-good{background:#F0FDF4}.wk-c-good b{color:#15803D}.wk-c-mute{background:#F1F5F9}',
     '.wk-prod{scroll-margin-top:80px;transition:box-shadow .3s}.wk-prod.wk-flash{box-shadow:0 0 0 3px #93C5FD}',
     '.wk-pill{display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600}.wk-pill.wk-bad{background:#FEE2E2;color:#B91C1C}.wk-pill.wk-warn{background:#FEF3C7;color:#B45309}.wk-pill.wk-good{background:#DCFCE7;color:#15803D}',
     '.wk-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 12px}.wk-mini div{display:flex;flex-direction:column;min-width:0}.wk-mini span{font-size:12px;color:var(--mute)}.wk-mini b{font-size:15px}.wk-mini small{font-size:12px;color:var(--mute)}',
     '.wk-todo{border-top:1px solid #EEF1F6;padding-top:10px;font-size:13px}.wk-todo ul{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px;line-height:1.5}.wk-t-bad::marker{color:#EF4444}.wk-t-warn::marker{color:#F59E0B}.wk-t-good::marker{color:#22C55E}',
     '.wk-cl{display:flex;flex-direction:column;gap:6px;font-size:13px}.wk-camp{display:flex;flex-direction:column;gap:2px;text-align:left;border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 10px;font:inherit;cursor:pointer;color:var(--ink);min-width:0}.wk-camp:hover{border-color:#93C5FD;background:#F8FBFF}.wk-ell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}.wk-cm{font-size:12px;color:var(--mute)}',
     '.wk-foot{font-size:12px;color:var(--mute);line-height:1.6}',
-    '@media (max-width:640px){.wk-wrap{padding:16px 14px 48px}.wk-wrap h1{font-size:22px}.wk-prods{grid-template-columns:1fr}.wk-mini{grid-template-columns:repeat(2,1fr)}.wk-val{font-size:20px}.wk-week span{min-width:110px}}'
+    '@media (max-width:640px){.wk-wrap{padding:14px 12px 48px;gap:12px}.wk-wrap h1{font-size:22px}.wk-head{align-items:stretch}.wk-head>div:first-child{width:100%}.wk-tools{width:100%}.wk-week{flex:1;justify-content:space-between}.wk-week span{min-width:0;font-size:14px}.wk-btn{padding:0 12px}',
+    '.wk-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.wk-kpi{padding:10px 12px}.wk-lbl{font-size:12px}.wk-val{font-size:19px}.wk-sub{font-size:11px}',
+    '.wk-hl{grid-template-columns:1fr;gap:8px}.wk-pad{padding:12px 14px}.wk-fix{grid-template-columns:1fr;gap:8px}.wk-fixb{padding:10px}.wk-fixb.ok{display:none}',
+    '.wk-scroll{display:none}.wk-hm{display:block}.wk-chartbox{height:200px!important}.wk-legend{font-size:11px}',
+    '.wk-prods{grid-template-columns:minmax(0,1fr)}.wk-mini{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.wk-mini b{font-size:14px}.wk-mini span{font-size:11px}.wk-todo{font-size:13px}}'
   ].join('\n');
   document.head.appendChild(css);
   if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', install); } else { install(); }
