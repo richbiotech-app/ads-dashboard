@@ -19,7 +19,7 @@
   function months(yr, mo) { var pm = mo === 1 ? 12 : mo - 1, py = mo === 1 ? yr - 1 : yr; return [py + '-' + p2(pm), yr + '-' + p2(mo)]; }
   function norm(s) { return String(s || '').toLowerCase().replace(/[\s+]/g, ''); }
   function visible() { var w = document.getElementById('commissionViewInner'); return !!(w && w.offsetParent); }
-  function isLord(p) { return ['The lord', 'Wolf', 'Sopink', 'Olymplus', 'BLING&SYN'].indexOf(p) >= 0; }
+  function isLord(p) { return ['The lord', 'Wolf', 'Sopink', 'BLING&SYN'].indexOf(p) >= 0; }
 
   /* ── CasperCall ─────────────────────────────────────────── */
   function fetchM(m) {
@@ -199,14 +199,14 @@
       '<div class="cm2-note"><span class="cm2-sw"></span> ช่องสีเขียว = ดึงจาก CasperCall (ยอดยิง = ค่าแอดที่คีย์ · ยอดขาย = ยอดขายสินค้านั้น) · ' + cInfo +
       (readOnly() ? '' : ' <button class="cm2-link" onclick="commV2.refill()">↻ ดึงจาก Casper ใหม่ (ทับทุกช่อง)</button>') + '</div></div>' +
       '<div id="cm2Table">' + tableHtml(S.tab) + '</div></div>' +
-      '<div class="cm2-card cm2-pad cm2-rates"><h2>อัตราค่าคอมต่อวัน</h2><div class="cm2-note">ได้ค่าคอมเมื่อยอดยิงต่อวันต่อสินค้า ≥ ฿30,000 และ %Ads ต่ำกว่า 70% · ยิ่ง %Ads ต่ำและยอดยิงสูง ยิ่งได้มาก · The lord / Wolf / Sopink / Olymplus / BLING&SYN ใช้ตาราง LORD</div>' + rateTable() + '</div>' +
+      '<div class="cm2-card cm2-pad cm2-rates"><h2>อัตราค่าคอมต่อวัน</h2><div class="cm2-note">ได้ค่าคอมเมื่อยอดยิงต่อวันต่อสินค้า ≥ ฿30,000 และ %Ads ต่ำกว่า 70% · ยิ่ง %Ads ต่ำและยอดยิงสูง ยิ่งได้มาก · The lord / Wolf / Sopink / BLING&SYN ใช้ตาราง LORD</div>' + rateTable() + '</div>' +
       '</div>';
     trend();
   }
   function rateTable() {
     var hd = ['≥52%', '50–52%', '48–50%', '45–48%', '42–45%', '38–42%', '<38%'];
     function t(tbl, name) { return '<div><div class="cm2-mute" style="margin:6px 0">' + name + '</div><div class="cm2-scroll"><table class="cm2-t cm2-rt"><thead><tr><th>ยอดยิง/วัน</th>' + hd.map(function (x) { return '<th class="r">' + x + '</th>'; }).join('') + '</tr></thead><tbody>' + tbl.map(function (r) { return '<tr><td>≥ ' + baht(r.min) + '</td>' + r.r.map(function (v) { return '<td class="r">' + v + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div></div>'; }
-    return '<details><summary class="cm2-link">ดูตารางอัตรา</summary>' + t(COMM_TABLE, 'ตารางปกติ') + t(COMM_TABLE_LORD, 'ตาราง LORD (The lord / Wolf / Sopink / Olymplus / BLING&SYN)') + '</details>';
+    return '<details><summary class="cm2-link">ดูตารางอัตรา</summary>' + t(COMM_TABLE, 'ตารางปกติ') + t(COMM_TABLE_LORD, 'ตาราง LORD (The lord / Wolf / Sopink / BLING&SYN)') + '</details>';
   }
   function trend() {
     requestAnimationFrame(function () {
