@@ -242,7 +242,7 @@
   }
 
   /* ── เปิดหน้า / เมนู ──────────────────────────────────── */
-  function setHash() { try { history.replaceState(null, '', location.pathname + location.search + '#weekly=' + (S.start || defStart())); } catch (e) {} }
+  function setHash() { if (!/^#weekly/.test(location.hash || '')) { return; } try { history.replaceState(null, '', location.pathname + location.search + '#weekly=' + (S.start || defStart())); } catch (e) {} }
   function open(el) {
     document.querySelectorAll('[id$="View"]').forEach(function (v) { v.style.display = 'none'; });
     document.querySelectorAll('.sb-item').forEach(function (i) { i.classList.remove('active'); });
@@ -284,7 +284,7 @@
     var view = document.createElement('div'); view.id = 'weeklyView'; view.style.display = 'none';
     view.innerHTML = '<div id="weeklyInner"></div>';
     wrap.appendChild(view);
-    document.addEventListener('click', function (e) { var it = e.target.closest && e.target.closest('.sb-item'); if (it && it.id !== 'sb-weekly') { var v = document.getElementById('weeklyView'); if (v) { v.style.display = 'none'; } S.open = false; } }, true);
+    document.addEventListener('click', function (e) { var it = e.target.closest && e.target.closest('.sb-item'); if (it && it.id !== 'sb-weekly') { var v = document.getElementById('weeklyView'); if (v) { v.style.display = 'none'; } S.open = false; if (/^#weekly/.test(location.hash || '')) { try { history.replaceState(null, '', location.pathname + location.search); } catch (e2) {} } } }, true);
     // รอข้อมูล Facebook โหลดเพิ่ม แล้ววาดใหม่ (ไม่วาดระหว่างที่คนกำลังเลื่อนอ่านถ้าข้อมูลไม่เปลี่ยน)
     setInterval(function () { if (!visible()) { return; } var r = fbLoaded().rows; if (r !== S.lastN) { S.lastN = r; render(); } }, 5000);
     var m = /^#weekly(?:=(\d{4}-\d\d-\d\d))?/.exec(location.hash || '');
