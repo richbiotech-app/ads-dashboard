@@ -2181,7 +2181,7 @@ var COMM_TABLE_LORD=[
 function commCalc(sp,rv,prod){
   if(!sp||!rv||sp<=0||rv<=0)return{com:0,pct:0};
   var pct=sp/rv*100;
-  var isLord=(prod==='The lord'||prod==='Wolf'||prod==='Sopink'||prod==='Olymplus'||prod==='BLING&SYN');
+  var isLord=(prod==='The lord'||prod==='Wolf'||prod==='Sopink'||prod==='BLING&SYN');
   var tbl=isLord?COMM_TABLE_LORD:COMM_TABLE;
   if(pct>=70)return{com:0,pct:pct};
   var row=null;
@@ -9895,5 +9895,5 @@ function chatPageRender(){
 <script src="v2-skin.js?v=1"></script>
 <script src="v2-auth.js?v=11"></script><script src="v2-issues.js?v=8"></script><script src="v2-activepages.js?v=3"></script><script src="v2-ideas.js?v=4"></script><script src="v2-budlog.js?v=1"></script><script src="v2-promo.js?v=3"></script><script src="v2-swarm.js?v=8"></script>
 <script src="v2-tokens.js?v=3"></script>
-<script src="v2-comm.js?v=2"></script>
+<script src="v2-comm.js?v=3"></script>
 <script src="v2-fbmanage.js?v=2"></script>
