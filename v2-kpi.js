@@ -89,7 +89,22 @@
     accsOf(p).forEach(function (acc) { (fbDataMap[acc] || []).forEach(function (r) { if (r.date >= info.first && r.date <= info.last) { s += +r.spend || 0; if (r.date > maxD) maxD = r.date; } }); });
     return { spend: s, through: maxD };
   }
-  function casperOf(month, product) { var c = DATA && DATA._casper && DATA._casper[month]; return c && c[product] || null; }
+  var LIVE = {}, WORKER = 'https://richbiotech-fb-proxy.ads02.workers.dev';
+  function liveCasper(month) {
+    var L = LIVE[month] || (LIVE[month] = { t: 0, busy: false, d: null });
+    if (L.busy || Date.now() - L.t < 10 * 60000) return;
+    var tk = ''; try { tk = localStorage.getItem('rb_auth_token') || ''; } catch (e) {}
+    if (!tk) return;
+    L.busy = true; L.t = Date.now();
+    fetch(WORKER + '/_casper/month', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: tk, m: month }) })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) { L.busy = false; if (d && d.prods) { L.d = d; if (!S.editing) render(); } })
+      .catch(function () { L.busy = false; });
+  }
+  function casperOf(month, product) {
+    var L = LIVE[month]; if (L && L.d && L.d.prods) return L.d.prods[product] || null;
+    var c = DATA && DATA._casper && DATA._casper[month]; return c && c[product] || null;
+  }
 
   function compute(list, info, month) {
     var pace = info.days ? info.done / info.days : 0;
@@ -138,6 +153,7 @@
     var box = document.getElementById('kpiV2Inner'); if (!box) return;
     var v = document.getElementById('kpiV2View'); if (!v || v.style.display === 'none') return;
     if (!S.month) S.month = curMonth();
+    liveCasper(S.month);
     var info = mInfo(S.month), h = '';
     var monthData = DATA && DATA.months[S.month];
     var list = S.editing ? S.draft : (monthData && monthData.items) || null;
