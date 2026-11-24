@@ -88,6 +88,10 @@
         t = t.slice(0, rtrim(t, M[1])) + ",\n  {name:" + q(op.name) + ",id:" + q(op.id) + ",configKey:" + q('FB_GID_' + op.name) + "}\n" + t.slice(M[1]);
         var T = seg(t, 'var FB_TOKENS={');
         t = t.slice(0, T[0] + 1) + "\n  " + q(op.name) + ":" + q(op.token) + "," + t.slice(T[0] + 1);
+        // ค่าใน object ถูกรีเซ็ตเป็นชื่อตัวเองตอนรัน → ต้องมีบรรทัด FB_TOKENS['X']=FB_TOKENS['token']; ต่อท้ายชุด alias ด้วย
+        var reA = /FB_TOKENS\['[^']+'\]=FB_TOKENS\['[^']+'\];/g, mA, endA = -1; while ((mA = reA.exec(t))) { endA = mA.index + mA[0].length; }
+        if (endA < 0) { throw new Error('หาแถว FB_TOKENS alias ไม่เจอ'); }
+        t = t.slice(0, endA) + "FB_TOKENS[" + q(op.name) + "]=FB_TOKENS[" + q(op.token) + "];" + t.slice(endA);
         var f = findPage(t, op.product, op.page, op.nth), A = accArr(t, f.o), hs = objs(t, A[0], A[1]);
         var code = '{displayName:' + q(op.display) + ',adAccounts:[' + q(op.name) + ']}';
         for (var i = 0; i < hs.length; i++) { // แทนตัวแทน "ยังไม่ได้ผูกบัญชี"
