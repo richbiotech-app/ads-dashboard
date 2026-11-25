@@ -66,7 +66,7 @@
     ((window.fbDataMap || {})[c.acc] || []).forEach(function (r) { if (r.campaign !== c.name || r.date < from || r.date > end) return; s += num(r.spend); v += num(r.revenue); ch += num(r.conversations); b += num(r.purchases); });
     if (s <= 0) return '<span class="tg-cm"><span>ยังไม่ใช้เงิน</span></span>';
     var ro = v / s, cls = ro >= 2 ? 'g' : ro >= 1 ? 'w' : 'b';
-    return '<span class="tg-cm"><span>ใช้ <b>' + B(s) + '</b></span><span>ขาย <b>' + (v ? B(v) : '–') + '</b></span><span>ROAS <b class="' + cls + '">' + ro.toFixed(2) + '</b></span><span>ทัก <b>' + Math.round(ch) + '</b>' + (ch ? ' (' + B(s / ch) + ')' : '') + '</span><span>ซื้อ <b>' + Math.round(b) + '</b>' + (b ? ' (' + B(s / b) + ')' : '') + '</span></span>';
+    return '<span class="tg-cm"><span>ใช้ <b>' + B(s) + '</b></span><span>ขาย <b>' + (v ? B(v) : '–') + '</b></span><span>ROAS <b class="' + cls + '">' + ro.toFixed(2) + '</b></span><span>ทัก <b>' + Math.round(ch) + '</b></span><span>ต้นทุน/ทัก <b>' + (ch ? B(s / ch) : '–') + '</b></span><span>ซื้อ <b>' + Math.round(b) + '</b></span><span>ต้นทุน/ซื้อ <b>' + (b ? B(s / b) : '–') + '</b></span></span>';
   }
 
   /* ---------- ตัวเลขของเทส ---------- */
