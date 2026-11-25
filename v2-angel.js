@@ -48,7 +48,7 @@
   function act(arr, types) { for (var i = 0; i < types.length; i++) { var x = (arr || []).filter(function (y) { return y.action_type === types[i]; })[0]; if (x) return num(x.value); } return 0; }
   function fetchMonth(m) {
     if (LOADING[m]) return; LOADING[m] = { done: 0, total: 0, rows: [] };
-    var L = LOADING[m], r = mRange(m), from = addD(r[0], -14), to = r[1] < today() ? r[1] : today();
+    var L = LOADING[m], r = mRange(m), from = addD(r[0], -14), to = addD(r[1], 4) < today() ? addD(r[1], 4) : today(); // +4 วัน: ตัวที่เริ่มยิงปลายรอบ (21–25) ต้องเห็นครบ 5 วัน
     var info = accInfo(), accs = Object.keys(info); L.total = accs.length;
     var meta = window.FB_ACCOUNTS_META || [];
     var q = accs.slice();
