@@ -368,7 +368,8 @@
       var adm = isAdmin(), hs = c.pg.accounts.filter(function (h) { return (h.adAccounts || []).length; });
       var admin = adm ? '<div class="fm-adm"><div class="fm-sub">สำหรับแอดมิน</div>' +
         (hs.length ? hs.map(function (h, i) { return '<div class="fm-row"><span>' + esc(h.displayName) + '</span><button class="fm-btn fm-sm fm-red" onclick="fbManage._delHolder(' + i + ')">เอาออกจากแดชบอร์ด</button></div>'; }).join('') : '') +
-        (hs.length ? '<small>ลบเพจได้เมื่อไม่มีบัญชีเหลืออยู่</small>' : '<button class="fm-btn fm-red" onclick="fbManage._delPage()">ลบเพจนี้</button>') + '</div>' : '';
+        (hs.length ? '<small>ลบเพจได้เมื่อไม่มีบัญชีเหลืออยู่</small>' : '<button class="fm-btn fm-red" onclick="fbManage._delPage()">ลบเพจนี้</button>') + '</div>'
+        : (!hs.length ? '<div class="fm-adm"><div class="fm-sub">เพจนี้ไม่มีบัญชีโฆษณา</div><button class="fm-btn fm-red" onclick="fbManage._delPage()">ลบเพจนี้</button></div>' : '');
       modal('แก้ไขข้อมูลเพจ',
         '<div class="fm-where">' + esc(c.p.product) + '</div>' +
         '<label class="fm-f"><span>ชื่อเพจ</span><input id="fmPg" maxlength="80" value="' + esc(c.pg.name) + '"></label>' +
@@ -405,8 +406,24 @@
         shut(); toast('เอา ' + h.displayName + ' ออกแล้ว');
       } catch (e) { lockBtns(false); setRes('<div class="fm-msg bad">' + esc(e.message) + '</div>'); }
     },
+    // ลบเพจว่าง (ไม่มีบัญชีโฆษณา) จากปุ่มบนการ์ดเพจ · ทุกคนที่แก้ไขได้ (ฝั่งแก้ไฟล์กันไม่ให้ลบเพจที่ยังมีบัญชี)
+    delPageAt: async function (idx) {
+      if (!canEdit()) { return; }
+      var p = ctx().p || FB_HIERARCHY[CUR.p]; if (!p) { return; }
+      var pg = p.pages[idx]; if (!pg) { return; }
+      if (pg.accounts.some(function (h) { return (h.adAccounts || []).length; })) { return toast('เพจนี้ยังมีบัญชีโฆษณา ลบไม่ได้'); }
+      if (!confirm('ลบเพจ "' + pg.name + '" ออกจากแดชบอร์ด?\nเพจนี้ไม่มีบัญชีโฆษณา · เพจใน Facebook ไม่ถูกลบ')) { return; }
+      var nth = p.pages.slice(0, idx).filter(function (g) { return g.name === pg.name; }).length;
+      var op = { type: 'delPage', product: p.product, page: pg.name, nth: nth };
+      toast('กำลังลบเพจ…');
+      try {
+        var r = await run(op, 'ลบเพจ ' + pg.name + ' (' + p.product + ')', ['page:remove', '-', p.product + ' / ' + pg.name, pg.name, '']);
+        if (r.dry) { return toast('ทดลอง (ไม่บันทึกจริง) ผ่าน'); }
+        toast('ลบเพจ ' + pg.name + ' แล้ว'); CUR.pg = -1; if (window.fbV2) { fbV2.product(FB_HIERARCHY.indexOf(p)); }
+      } catch (e) { toast('ลบไม่สำเร็จ: ' + e.message); }
+    },
     _delPage: async function () {
-      if (!isAdmin()) { return; }
+      if (!isAdmin() && !(canEdit() && A.hs && !A.hs.length)) { return; }
       var c = A.c;
       if (!confirm('ลบเพจ "' + c.pg.name + '" ออกจากแดชบอร์ด?')) { return; }
       var op = { type: 'delPage', product: c.p.product, page: c.pg.name, nth: c.nth };
@@ -458,12 +475,31 @@
         a.innerHTML = '<span class="fm-plus">+</span><b>เพิ่มเพจใหม่</b><small>ในสินค้านี้</small>';
         a.onclick = function () { fbManage.addPage(); }; g.appendChild(a);
       }
+      // ป้าย "ซ้ำ" + ปุ่มลบบนการ์ดเพจที่ไม่มีบัญชีโฆษณา
+      var pp = ctx().p;
+      if (g && pp) {
+        var nm = function (s) { return String(s || '').replace(/โทร\.?\s*[\d\-\s]+$/, '').replace(/\s+/g, '').toLowerCase(); }, cnt = {};
+        pp.pages.forEach(function (x) { var k = nm(x.name); cnt[k] = (cnt[k] || 0) + 1; });
+        Array.prototype.forEach.call(g.querySelectorAll('.v2-pagecard'), function (card) {
+          if (card.querySelector('.fm-pgtools')) { return; }
+          var m = /fbV2\.page\((\d+)\)/.exec(card.getAttribute('onclick') || ''); if (!m) { return; }
+          var idx = +m[1], pg = pp.pages[idx]; if (!pg) { return; }
+          var empty = !pg.accounts.some(function (h) { return (h.adAccounts || []).length; }), dup = cnt[nm(pg.name)] > 1;
+          if (!empty && !dup) { return; }
+          var t = document.createElement('div'); t.className = 'fm-pgtools';
+          t.innerHTML = (dup ? '<span class="fm-dup" title="มีเพจชื่อเดียวกันในสินค้านี้">ซ้ำ</span>' : '') + (empty ? '<span class="fm-del" role="button" tabindex="0">ลบเพจ</span>' : '');
+          var d = t.querySelector('.fm-del');
+          if (d) { var go = function (e) { e.stopPropagation(); e.preventDefault(); fbManage.delPageAt(idx); }; d.onclick = go; d.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { go(e); } }; }
+          var more = card.querySelector('.v2-more'); if (more) { card.insertBefore(t, more); } else { card.appendChild(t); }
+        });
+      }
     }
   }
 
   var css = document.createElement('style');
   css.textContent = [
     '.fm-addcard{display:flex;align-items:center;gap:14px;padding:14px 18px;width:100%;text-align:left;font:inherit;color:#1D4ED8;cursor:pointer;border:1px dashed #93C5FD!important;background:#F8FBFF!important}.fm-addcard:hover{background:#EFF6FF!important}.fm-addcard span:last-child{display:flex;flex-direction:column}.fm-addcard small{color:#475569;font-size:12px}',
+    '.fm-pgtools{display:flex;gap:6px;align-items:center;margin:2px 0 4px}.fm-dup{font-size:11px;font-weight:700;color:#B45309;background:#FEF3C7;border-radius:99px;padding:2px 8px}.fm-del{font-size:12px;font-weight:600;color:#B91C1C;border:1px solid #FECACA;background:#FEF2F2;border-radius:8px;padding:3px 10px;cursor:pointer}.fm-del:hover,.fm-del:focus{background:#FEE2E2;outline:none}',
     '.fm-plus{width:36px;height:36px;border-radius:99px;background:#DBEAFE;color:#1D4ED8;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;flex:none}',
     '.fm-addpage{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:120px;font:inherit;color:#1D4ED8;cursor:pointer;border:1px dashed #93C5FD!important;background:#F8FBFF!important}.fm-addpage:hover{background:#EFF6FF!important}.fm-addpage small{color:#475569;font-size:12px}',
     '.fm-h2row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}.fm-editpg{border:1px solid #E5E7EB;background:#fff;border-radius:8px;height:32px;padding:0 12px;font:inherit;font-size:13px;font-weight:600;color:#1D4ED8;cursor:pointer}.fm-editpg:hover{border-color:#93C5FD}',
