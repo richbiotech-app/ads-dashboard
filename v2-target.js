@@ -244,11 +244,16 @@
         var o = seen[k] || (seen[k] = { acc: acc, name: r.campaign, s: 0, last: '', first: r.date }); o.s += num(r.spend); if (r.date > o.last) o.last = r.date; if (r.date < o.first) o.first = r.date;
       });
     });
+    // แคมเปญที่เพิ่งสร้าง (ดึงสดจาก Facebook ของบัญชีที่เลือกอยู่) → หน้าที่เปิดค้างไว้ก็ยังเห็น
+    Object.keys(LIVE).forEach(function (acc) { var ii = info0[acc]; if (!ii) return; if (prod && ii.prod !== prod) return; (LIVE[acc].list || []).forEach(function (x) { var k = acc + '|' + x.name; if (!seen[k]) seen[k] = { acc: acc, name: x.name, s: 0, last: '', first: x.first || today() }; }); });
+    // แคมเปญเปิดใหม่ที่ยังไม่มีค่าแอด (จาก fbCampaignsMap) → เลือกเทสได้ตั้งแต่ก่อนเริ่มยิง
+    var cmx = window.fbCampaignsMap || {};
+    Object.keys(cmx).forEach(function (acc) { var ii = info0[acc]; if (!ii) return; if (prod && ii.prod !== prod) return; Object.keys(cmx[acc] || {}).forEach(function (n) { var x = cmx[acc][n] || {}; if (x.status !== 'ACTIVE') return; var k = acc + '|' + n; if (seen[k]) return; var st = String(x.start_time || '').slice(0, 10); seen[k] = { acc: acc, name: n, s: 0, last: '', first: st || today() }; }); });
     Object.keys(seen).forEach(function (k) { out.push(seen[k]); });
     q = (q || '').toLowerCase();
     if (q) out = out.filter(function (o) { return (o.name + ' ' + o.acc + ' ' + (info0[o.acc] || {}).page).toLowerCase().indexOf(q) >= 0; });
     out.sort(function (a, b) { return b.first.localeCompare(a.first) || b.s - a.s; });
-    return out.slice(0, 40);
+    return out.slice(0, q ? 150 : 60);
   }
   function openForm(t) {
     AI = accInfo();
@@ -256,7 +261,20 @@
     M._cq = ''; M._cp = M.prod || '';
     drawForm();
   }
+  var LIVE = {};
+  function liveFetch(accs) {
+    (accs || []).forEach(function (acc) {
+      if (LIVE[acc] && Date.now() - LIVE[acc].t < 120000) return;
+      var mt = (window.FB_ACCOUNTS_META || []).filter(function (m) { return m.name === acc; })[0]; if (!mt) return;
+      LIVE[acc] = { t: Date.now(), list: [] };
+      fetch('https://richbiotech-fb-proxy.ads02.workers.dev/v21.0/' + mt.id + '/campaigns?fields=name,effective_status,created_time&limit=200&account=' + encodeURIComponent((window.FB_TOKENS || {})[acc] || acc))
+        .then(function (r) { return r.json(); })
+        .then(function (j) { LIVE[acc].list = (j.data || []).filter(function (c) { return c.effective_status === 'ACTIVE'; }).map(function (c) { return { name: c.name, first: String(c.created_time || '').slice(0, 10) }; }); if (M && document.getElementById('tgModal')) drawForm(); })
+        .catch(function () {});
+    });
+  }
   function drawForm() {
+    try { if (M) liveFetch(M.camps.map(function (c) { return c.acc; }).filter(function (a, i, x) { return x.indexOf(a) === i; }).slice(0, 5)); } catch (e) {}
     var ov = document.getElementById('tgModal');
     if (!ov) { ov = document.createElement('div'); ov.id = 'tgModal'; ov.onclick = function (e) { if (e.target === ov) close(); }; document.body.appendChild(ov); }
     ov.style.display = 'flex';
@@ -282,8 +300,10 @@
   function campRows() {
     var have = {}; M.camps.forEach(function (c) { have[c.acc + '|' + c.name] = 1; });
     var L = campList(M._cp, M._cq);
-    if (!L.length) return '<div class="c2-dim">ไม่พบแคมเปญที่มีค่าแอดใน 30 วัน</div>';
-    return L.map(function (o) { var ii = info(o.acc), k = o.acc + '|' + o.name, on = have[k]; return '<button class="' + (on ? 'on' : '') + '" onclick="tgV2.pick(\'' + jsq(o.acc) + '\',\'' + jsq(o.name) + '\')"><span><b>' + esc(o.name) + '</b><small>' + esc(ii.prod) + ' · ' + esc(ii.disp) + ' · เริ่ม ' + dl(o.first) + ' · ' + B(o.s) + '</small></span><i>' + (on ? '✓' : '+') + '</i></button>'; }).join('');
+    if (!L.length) return '<div class="c2-dim">ไม่พบแคมเปญ (ค้นจากแคมเปญที่มีค่าแอดใน 30 วัน และแคมเปญเปิดใหม่)</div>';
+    var nNew = L.filter(function (o) { return !have[o.acc + '|' + o.name]; }).length;
+    var bulk = (M._cq && nNew > 1) ? '<button class="tgm-all" style="border-style:dashed" onclick="tgV2.pickAll()"><span><b>+ เพิ่มทั้งหมดที่ค้นเจอ (' + nNew + ' แคมเปญ)</b><small>ตามคำค้น "' + esc(M._cq) + '"</small></span><i>++</i></button>' : '';
+    return bulk + L.map(function (o) { var ii = info(o.acc), k = o.acc + '|' + o.name, on = have[k]; return '<button class="' + (on ? 'on' : '') + '" onclick="tgV2.pick(\'' + jsq(o.acc) + '\',\'' + jsq(o.name) + '\')"><span><b>' + esc(o.name) + '</b><small>' + esc(ii.prod) + ' · ' + esc(ii.disp) + ' · เริ่ม ' + dl(o.first) + ' · ' + B(o.s) + '</small></span><i>' + (on ? '✓' : '+') + '</i></button>'; }).join('');
   }
   function similar() {
     if (!M.type && !M.what) return [];
@@ -328,9 +348,30 @@
     var go = function () {
       var t = testedSet()[acc + '|' + name];
       if (t) { openForm(t); return; }
-      openForm(null); M.camps = [{ acc: acc, name: name }]; M.start = campStart(acc, name); M.prod = info(acc).prod; M._cp = M.prod; drawForm();
+      var prod = info(acc).prod, lim = addD(today(), -14);
+      var pOf = function (x) { return info(((x.camps || [])[0] || {}).acc || '').prod; };
+      var run = tests().filter(function (x) { return (x.status || 'run') === 'run' && String(x.start || '') >= lim; }).sort(function (a, b) { return ((pOf(b) === prod) - (pOf(a) === prod)) || String(b.start || '').localeCompare(String(a.start || '')); }).slice(0, 8);
+      if (!run.length) { window.tgV2.newFrom(acc, name); return; }
+      chooser(acc, name, run);
     };
     if (!DATA) load(true).then(go); else go();
+  }
+
+  // เลือกว่าแคมเปญจากปุ่ม "เทส" จะสร้างเทสใหม่ หรือเพิ่มเข้าเทสที่กำลังเทสอยู่ (1 เทสมีได้หลายแคมเปญ)
+  function closeChooser() { var o = document.getElementById('tgChoose'); if (o) o.remove(); }
+  function chooser(acc, name, run) {
+    closeChooser();
+    var BT = 'display:block;width:100%;text-align:left;border:1px solid #e2e8f0;background:#fff;border-radius:10px;padding:10px 12px;margin:6px 0;font:inherit;font-size:14px;cursor:pointer;color:#0f172a';
+    var o = document.createElement('div'); o.id = 'tgChoose';
+    o.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:10050;display:flex;align-items:center;justify-content:center;padding:16px';
+    o.onclick = function (e) { if (e.target === o) closeChooser(); };
+    var h = '<div role="dialog" aria-label="บันทึกเป็นเทส" style="background:#fff;border-radius:14px;max-width:520px;width:100%;max-height:85vh;overflow:auto;padding:18px;box-shadow:0 20px 50px rgba(0,0,0,.25)">';
+    h += '<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><div style="font-weight:700;font-size:16px">บันทึกแคมเปญนี้เป็นเทส</div><div style="font-size:12px;color:#64748b;margin-top:2px;word-break:break-all">' + esc(name) + '</div></div><button aria-label="ปิด" onclick="tgV2.closeChooser()" style="border:0;background:none;font-size:18px;cursor:pointer;color:#64748b">✕</button></div>';
+    h += '<button onclick="tgV2.newFrom(\'' + jsq(acc) + '\',\'' + jsq(name) + '\')" style="' + BT + ';margin-top:14px;border-color:#2563eb;color:#1d4ed8;font-weight:700">+ สร้างเทสใหม่</button>';
+    h += '<div style="font-size:12px;color:#64748b;margin:14px 0 2px">หรือเพิ่มเข้าเทสที่กำลังเทสอยู่ (1 เทสมีได้หลายแคมเปญ)</div>';
+    h += run.map(function (t) { var ii = info(((t.camps || [])[0] || {}).acc || ''); return '<button onclick="tgV2.addTo(\'' + jsq(t.id) + '\',\'' + jsq(acc) + '\',\'' + jsq(name) + '\')" style="' + BT + '"><b>' + esc(t.what || t.type || '') + '</b><span style="display:block;font-size:12px;color:#64748b;margin-top:2px">' + esc(t.owner || '') + ' · ' + esc(t.type || '') + ' · ' + esc(ii.prod || t.prod || '') + ' · เริ่ม ' + dl(t.start) + ' · ' + (t.camps || []).length + ' แคมเปญ</span></button>'; }).join('');
+    o.innerHTML = h + '</div>';
+    document.body.appendChild(o);
   }
 
   /* ---------- เปิดหน้า / ติดตั้ง ---------- */
@@ -383,6 +424,10 @@
       drawForm();
     },
     rm: function (i) { if (M) { M.camps.splice(i, 1); drawForm(); } },
+    pickAll: function () { if (!M) return; var have = {}; M.camps.forEach(function (c) { have[c.acc + '|' + c.name] = 1; }); campList(M._cp, M._cq).forEach(function (o) { if (!have[o.acc + '|' + o.name]) M.camps.push({ acc: o.acc, name: o.name }); }); if (!M.id && M.camps.length && !M.prod) { M.prod = info(M.camps[0].acc).prod; M.start = campStart(M.camps[0].acc, M.camps[0].name); } drawForm(); },
+    addTo: function (id, acc, name) { closeChooser(); var t = tests().filter(function (x) { return x.id === id; })[0]; if (!t) return; openForm(t); if (!M.camps.some(function (c) { return c.acc === acc && c.name === name; })) M.camps.push({ acc: acc, name: name }); drawForm(); },
+    newFrom: function (acc, name) { closeChooser(); openForm(null); M.camps = [{ acc: acc, name: name }]; M.start = campStart(acc, name); M.prod = info(acc).prod; M._cp = M.prod; drawForm(); },
+    closeChooser: function () { closeChooser(); },
     submit: submit, close: close, quick: quickAdd, mark: markRows
   };
 
