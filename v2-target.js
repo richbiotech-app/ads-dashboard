@@ -60,6 +60,15 @@
   var MDD = null;
   function minDataDate() { if (MDD !== null) return MDD; var m = ''; for (var k in (window.fbDataMap || {})) (fbDataMap[k] || []).forEach(function (x) { if (x.date && (!m || x.date < m)) m = x.date; }); MDD = m; setTimeout(function () { MDD = null; }, 60000); return m; }
 
+  /* ---------- ตัวเลขรายแคมเปญ (ช่วงเดียวกับเทส) ---------- */
+  function campMet(t, c) {
+    var from = t.start, to = addD(t.start, (t.days || 3) - 1), now = today(), end = to < now ? to : now, s = 0, v = 0, ch = 0, b = 0;
+    ((window.fbDataMap || {})[c.acc] || []).forEach(function (r) { if (r.campaign !== c.name || r.date < from || r.date > end) return; s += num(r.spend); v += num(r.revenue); ch += num(r.conversations); b += num(r.purchases); });
+    if (s <= 0) return '<span class="tg-cm"><span>ยังไม่ใช้เงิน</span></span>';
+    var ro = v / s, cls = ro >= 2 ? 'g' : ro >= 1 ? 'w' : 'b';
+    return '<span class="tg-cm"><span>ใช้ <b>' + B(s) + '</b></span><span>ขาย <b>' + (v ? B(v) : '–') + '</b></span><span>ROAS <b class="' + cls + '">' + ro.toFixed(2) + '</b></span><span>ทัก <b>' + Math.round(ch) + '</b>' + (ch ? ' (' + B(s / ch) + ')' : '') + '</span><span>ซื้อ <b>' + Math.round(b) + '</b>' + (b ? ' (' + B(s / b) + ')' : '') + '</span></span>';
+  }
+
   /* ---------- ตัวเลขของเทส ---------- */
   function metrics(t) {
     var from = t.start, to = addD(t.start, (t.days || 3) - 1), now = today(), end = to < now ? to : now;
@@ -213,7 +222,7 @@
     var pi = info(((t.camps || [])[0] || {}).acc || '');
     h += '<div class="tg-meta"><span><b>' + esc(t.prod || pi.prod || '–') + '</b>' + (pi.page ? ' · ' + esc(pi.page) : '') + (pi.mgr ? ' <span class="tg-mgr">ผู้ดูแลเพจ ' + esc(pi.mgr) + '</span>' : '') + '</span>' +
       '<span>เริ่ม ' + dl(t.start) + ' · ดูผล ' + (t.days || 3) + ' วัน (' + dl(t.start) + '–' + dl(addD(t.start, (t.days || 3) - 1)) + ')</span><span class="c2-dim">บันทึกโดย ' + esc(t.by || '') + '</span></div>';
-    h += '<div class="tg-camps">' + (t.camps || []).map(function (c) { var ii = info(c.acc); return '<div><span class="tg-cn" title="' + esc(c.name) + '">' + esc(c.name) + '</span><span class="c2-dim ai2-sm">' + esc(ii.disp || c.acc) + '</span></div>'; }).join('') + '</div>';
+    h += '<div class="tg-camps">' + (t.camps || []).map(function (c) { var ii = info(c.acc), m = campMet(t, c); return '<div><span class="tg-cn" title="' + esc(c.name) + '">' + esc(c.name) + '</span><span class="c2-dim ai2-sm">' + esc(ii.disp || c.acc) + '</span>' + m + '</div>'; }).join('') + '</div>';
     h += '<div class="tg-kpi"><div><small>ค่าแอด</small><b>' + (a.s ? B(a.s) : '–') + '</b></div><div><small>ยอดขาย (FB)</small><b>' + (a.v ? B(a.v) : '–') + '</b></div>' +
       '<div><small>ROAS</small><b class="' + (a.roas >= 2 ? 'g' : a.roas >= 1 ? 'w' : a.s ? 'b' : '') + '">' + (a.s ? a.roas.toFixed(2) : '–') + '</b></div>' +
       '<div><small>ซื้อ · ต้นทุน/ซื้อ</small><b>' + I(a.b) + ' · ' + (a.b ? B(a.cpa) : '–') + '</b></div><div><small>ทัก · ต้นทุน/ทัก</small><b>' + I(a.ch) + ' · ' + (a.ch ? B(a.cpc) : '–') + '</b></div>' +
@@ -459,7 +468,7 @@
       '.tg-what{margin:0;font-size:16px;line-height:1.4;color:#0F172A}',
       '.tg-det{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;font-size:13px;color:#334155}.tg-det small,.tg-note small,.tg-sug small,.tg-kpi small{display:block;font-size:11px;color:#64748B}',
       '.tg-meta{display:flex;flex-direction:column;gap:2px;font-size:13px;color:#334155}.tg-mgr{display:inline-block;margin-left:4px;padding:0 8px;border-radius:99px;background:#EEF2FF;color:#4338CA;font-size:11px;font-weight:700}',
-      '.tg-camps{display:flex;flex-direction:column;gap:4px;background:#F8FAFC;border-radius:8px;padding:8px 10px}.tg-camps>div{display:flex;flex-direction:column;min-width:0}.tg-cn{font-size:13px;font-weight:600;color:#1D4ED8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.tg-camps{display:flex;flex-direction:column;gap:4px;background:#F8FAFC;border-radius:8px;padding:8px 10px}.tg-camps>div{display:flex;flex-direction:column;min-width:0}.tg-cn{font-size:13px;font-weight:600;color:#1D4ED8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tg-camps>div+div{border-top:1px solid #E5E7EB;padding-top:5px}.tg-cm{display:flex;flex-wrap:wrap;gap:1px 10px;font-size:12px;color:#475569;margin-top:2px;font-variant-numeric:tabular-nums}.tg-cm b{color:#0F172A;font-weight:600}.tg-cm b.g{color:#15803D}.tg-cm b.w{color:#B45309}.tg-cm b.b{color:#B91C1C}',
       '.tg-kpi{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 12px}.tg-kpi b{font-size:15px}.tg-kpi b.g{color:#15803D}.tg-kpi b.w{color:#B45309}.tg-kpi b.b{color:#B91C1C}',
       '.tg-res{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;border-top:1px solid #EEF1F6;padding-top:10px}',
       '.tg-sug{display:flex;flex-direction:column;padding:6px 12px;border-radius:10px;background:#F1F5F9;min-width:150px}.tg-sug b{font-size:15px}.tg-sug span{font-size:12px;color:#475569}.tg-sug.sg-win{background:#DCFCE7}.tg-sug.sg-win b{color:#15803D}.tg-sug.sg-loss{background:#FEE2E2}.tg-sug.sg-loss b{color:#B91C1C}.tg-sug.sg-meh{background:#FEF3C7}.tg-sug.sg-meh b{color:#B45309}',
