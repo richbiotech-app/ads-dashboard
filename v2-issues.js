@@ -221,9 +221,31 @@
     h += '<div class="iss-mf"><button class="iss-btn" onclick="issV2.close()">ยกเลิก</button><button class="iss-btn pri" ' + (S.busy ? 'disabled' : '') + ' onclick="issV2.create()">' + (S.busy ? 'กำลังส่ง…' : 'ส่งเรื่อง') + '</button></div></div></div>';
     return h;
   }
+  // ช่วงวันที่ของตัวเลขแคมเปญ (7 วันก่อนแจ้ง ถึงวันที่แจ้ง) จาก fbDataMap · หาแคมเปญจาก x.camp หรือบรรทัด "แคมเปญ :" ในข้อความแรก
+  var TMN = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+  function thd(s) { return (+s.slice(8)) + ' ' + TMN[+s.slice(5, 7) - 1]; }
+  function thr(a, b) { return a === b ? thd(a) : (a.slice(5, 7) === b.slice(5, 7) ? (+a.slice(8)) + '–' + thd(b) : thd(a) + ' – ' + thd(b)); }
+  function ymdOf(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function campDays(name, prod, endYmd, n) {
+    var nn = String(name || '').replace(/\s+/g, ' ').trim(); if (!nn) return null;
+    var e = new Date(endYmd + 'T00:00:00'), from = new Date(e); from.setDate(from.getDate() - (n - 1)); var f = ymdOf(from), days = {}, hit = false;
+    prods().forEach(function (p) { if (prod && p.product !== prod) return; (p.pages || []).forEach(function (pg) { (pg.accounts || []).forEach(function (a) { (a.adAccounts || []).forEach(function (acc) {
+      ((window.fbDataMap || {})[acc] || []).forEach(function (r) { if (r.date < f || r.date > endYmd) return; if (String(r.campaign || '').replace(/\s+/g, ' ').trim() !== nn) return; hit = true; var d = days[r.date] || (days[r.date] = { s: 0, ch: 0, b: 0 }); d.s += num(r.spend); d.ch += num(r.conversations); d.b += num(r.purchases); });
+    }); }); }); });
+    return hit ? days : null;
+  }
+  function campRange(x) {
+    var name = x.camp || ''; if (!name) { var m0 = ((x.msgs || [])[0] || {}).txt || ''; var mm = /แคมเปญ\s*[:：]\s*([^\n]+)/.exec(m0); if (mm) name = mm[1]; }
+    var t0 = new Date(x.t || Date.now()); if (isNaN(t0)) return '';
+    var e1 = new Date(t0); e1.setDate(e1.getDate() - 1); var days = campDays(name, x.prod, ymdOf(e1), 7); if (!days) return '';
+    var ks = Object.keys(days).filter(function (k) { return days[k].s > 0; }).sort(); if (!ks.length) return '';
+    var s = 0, ch = 0, b = 0; ks.forEach(function (k) { s += days[k].s; ch += days[k].ch; b += days[k].b; });
+    return '<div class="iss-meta">ตัวเลข Facebook ของแคมเปญนี้ <b>' + ks.length + ' วัน (' + thr(ks[0], ks[ks.length - 1]) + ')</b> · 7 วันก่อนวันที่แจ้ง: ใช้ <b>฿' + Math.round(s).toLocaleString() + '</b> · ทัก <b>' + Math.round(ch) + '</b>' + (ch ? ' (฿' + Math.round(s / ch) + '/ทัก)' : '') + ' · ซื้อ (FB) <b>' + Math.round(b) + '</b><br><span style="font-size:12px">รายวัน: ' + ks.map(function (k) { return thd(k) + ' ทัก ' + Math.round(days[k].ch); }).join(' · ') + '</span></div>';
+  }
   function detailHtml(x) {
     var h = '<div class="iss-ov" onclick="if(event.target===this)issV2.close()"><div class="iss-modal wide" role="dialog" aria-modal="true" aria-label="รายละเอียดเรื่อง"><div class="iss-mh"><div><div class="iss-r1">' + pill(x.status) + dirTag(x.dir) + (x.cat ? '<span class="iss-cat">' + esc(x.cat) + '</span>' : '') + '</div><h2>' + esc(x.title || '(ไม่มีหัวข้อ)') + '</h2><div class="iss-dim">' + (teamOf(x.prod) ? 'ทีม ' + esc(teamOf(x.prod)) + ' · ' : '') + esc([x.prod, x.page].filter(Boolean).join(' › ')) + ' · แจ้งโดย ' + esc(x.by) + ' ' + when(x.t) + '</div></div><button class="iss-x" aria-label="ปิด" onclick="issV2.close()">×</button></div>';
     if (x.camp) h += '<div class="iss-camp">แคมเปญ: ' + esc(x.camp) + '</div>';
+    try { h += campRange(x); } catch (e) {}
     if (x.meta && x.meta.chats) { var m = x.meta; h += '<div class="iss-meta">ตัวเลข 7 วัน (ตอนแจ้ง): ทัก <b>' + Math.round(m.chats) + '</b> · ฿/ทัก <b>' + Math.round(m.cpc) + '</b> (เฉลี่ยสินค้า ' + Math.round(m.avgCpc) + ') · ปิดได้ <b>' + (m.close * 100).toFixed(1) + '%</b> (เฉลี่ย ' + (m.avgClose * 100).toFixed(1) + '%) · ค่าแอด ฿' + Math.round(m.spend).toLocaleString() + '</div>'; }
     h += '<div class="iss-thread">';
     (x.msgs || []).forEach(function (m) {
@@ -341,7 +363,7 @@
     ask: function (i) {
       var c = (S._sg || [])[i]; if (!c) return;
       issV2.newForm({ dir: 'ads2sa', prod: c.prod, page: c.page, camp: c.camp, cat: 'ทักถูกแต่ปิดไม่ได้', title: 'ทักถูกแต่ปิดไม่ได้ · ' + c.page,
-        txt: 'คอนเทนต์นี้ 7 วันที่ผ่านมา มีคนทัก ' + Math.round(c.chats) + ' คน (฿' + Math.round(c.cpc) + '/ทัก ถูกกว่าค่าเฉลี่ย ฿' + Math.round(c.avgCpc) + ') แต่ปิดได้ ' + (c.close * 100).toFixed(1) + '% (เฉลี่ยสินค้า ' + (c.avgClose * 100).toFixed(1) + '%)\nรบกวนทีม SA ช่วยดูว่าลูกค้าที่ทักมาจากแอดนี้ถามอะไร / ทำไมไม่ซื้อ (เช่น ราคา, เข้าใจผิดเรื่องสินค้า, แค่สอบถาม)',
+        txt: 'คอนเทนต์นี้ ' + (function () { var ks = Object.keys(c.d || {}).sort(); return ks.length ? ks.length + ' วัน (' + thr(ks[0], ks[ks.length - 1]) + ')' : '7 วันที่ผ่านมา'; })() + ' มีคนทัก ' + Math.round(c.chats) + ' คน (฿' + Math.round(c.cpc) + '/ทัก ถูกกว่าค่าเฉลี่ย ฿' + Math.round(c.avgCpc) + ') แต่ปิดได้ ' + (c.close * 100).toFixed(1) + '% (เฉลี่ยสินค้า ' + (c.avgClose * 100).toFixed(1) + '%)\nรบกวนทีม SA ช่วยดูว่าลูกค้าที่ทักมาจากแอดนี้ถามอะไร / ทำไมไม่ซื้อ (เช่น ราคา, เข้าใจผิดเรื่องสินค้า, แค่สอบถาม)',
         meta: { chats: c.chats, cpc: c.cpc, avgCpc: c.avgCpc, close: c.close, avgClose: c.avgClose, spend: c.spend, buys: c.buys } });
     },
     del: function (id) {
