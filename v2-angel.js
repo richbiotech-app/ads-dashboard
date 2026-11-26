@@ -88,7 +88,11 @@
     return '';
   }
   // นับเฉพาะคอนเทนต์ที่วันที่แรกในชื่อ ≥ วันที่ 25 ของเดือนก่อน (เช่น พ.ย. → 25/10)
-  function cutOf(m) { var p = m.split('-'), d = new Date(+p[0], +p[1] - 2, 25); return ymd(d); }
+  // กติกาตัดรอบเกณฑ์ 1 (ผู้ใช้สั่ง 26 พ.ย. 69): ตัวที่ยังไม่ครบ 5 วันภายในวันที่ 25 ไปนับรอบถัดไป
+  // รอบ ธ.ค. 69 เป็นต้นไป = นับตามวันที่ครบ 5 วัน · รอบ พ.ย. 69 = เริ่มยิงในรอบ และต้องครบภายใน 25 พ.ย. (กันนับซ้ำกับรอบ ต.ค. ที่จ่ายไปแล้ว) · ก่อนหน้า = กติกาเดิม
+  function newRule(m) { return m >= '2026-12'; }
+  function startFrom(m) { return newRule(m) ? addD(mRange(m)[0], -4) : mRange(m)[0]; }
+  function cutOf(m) { if (newRule(m)) { return addD(mRange(m)[0], -5); } var p = m.split('-'), d = new Date(+p[0], +p[1] - 2, 25); return ymd(d); }
   // คีย์คอนเทนต์: ตัดส่วนหน้า "--" และเลขลำดับหน้าชื่อ แล้วเอาข้อความถึงวันที่แรก + เลข ver (วันรุมยิงไม่นับ) · ver ต่างกัน = คนละชิ้น
   function contentKey(c) {
     var s = String(c.name || '').replace(/^.*--\s*/, '').replace(/^[\s*().\[\]#_\-0-9]+/, '').replace(/\s+/g, ' ').trim().toLowerCase();
@@ -116,8 +120,9 @@
     Object.keys(cm).forEach(function (k) {
       var c = cm[k], ai = info[c.acc] || { pi: -1, prod: '', page: '', disp: c.acc, mgr: 'ไม่ระบุ' };
       c.pi = ai.pi; c.prod = ai.prod; c.page = ai.page; c.disp = ai.disp; c.mgr = ai.mgr;
-      // เกณฑ์ 1: ทักถูก (แคมเปญที่เริ่มยิงในเดือนนี้)
-      if (c.first && c.first >= rg[0] && c.first <= rg[1] && c.first > fetchFrom) {
+      // เกณฑ์ 1: ทักถูก — นับในรอบที่ยิงครบวันที่ 5 (ตัดรอบวันที่ 25 · ตัวที่ยังไม่ครบ 5 วันไปรอบถัดไป · ผู้ใช้สั่ง 26 พ.ย.)
+      var fin5 = c.first ? addD(c.first, 4) : '';
+      if (c.first && c.first >= startFrom(m) && (m >= '2026-11' ? fin5 <= rg[1] : c.first <= rg[1]) && c.first > fetchFrom) {
         var s = 0, ch = 0, end = addD(c.first, 4), n = 0;
         for (var i = 0; i < 5; i++) { var dd = addD(c.first, i), x = c.days[dd]; if (dd <= T) n++; if (x) { s += x.s; ch += x.ch; } }
         var rule = ruleOf(c.prod), cpc = ch ? s / ch : 0, grade = null;
@@ -154,7 +159,7 @@
     var R = compute(S.m), P = prods(), h = '<div class="c2-wrap ai2 ag">';
     var MR = mRange(S.m), toD = MR[1] < today() ? MR[1] : today();
     h += '<div class="c2-head"><div><h1>คัดนางฟ้า</h1><div class="c2-subhead">คัดคอนเทนต์ประจำเดือนด้วย 2 เกณฑ์ที่แยกกัน · ข้อมูลจาก Facebook</div>' +
-      '<div class="ag-range">ช่วงที่คัด: <b>' + dl(MR[0]) + ' ' + (+MR[0].slice(0, 4) + 543) + ' – ' + dl(toD) + ' ' + (+toD.slice(0, 4) + 543) + '</b>' + (toD < MR[1] ? ' <span class="c2-dim">(ถึงวันนี้ · รอบยังไม่จบ)</span>' : '') + ' · ดึงข้อมูลเมื่อ ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + '<div class="ag-cut">นับเฉพาะคอนเทนต์ที่<b>วันที่แรกในชื่อแคมเปญ ตั้งแต่ ' + (function (s) { var p = s.split('-'); return +p[2] + '/' + (+p[1]) + '/' + String(+p[0] + 543).slice(2); })(cutOf(S.m)) + '</b> เป็นต้นไป' + (R && (R.ex.old || R.ex.none) ? ' <span class="c2-dim">· ไม่นับ ' + R.ex.old + ' ชิ้นที่วันที่ในชื่อเก่ากว่า · ' + R.ex.none + ' ชิ้นที่ไม่มีวันที่ในชื่อ</span>' : '') + (R && R.ex.dup ? ' <span class="c2-dim">· รวมคอนเทนต์ซ้ำ ' + R.ex.dup + ' แคมเปญ (นับชิ้นเดียว · เปลี่ยน ver ถึงนับใหม่)</span>' : '') + '</div></div></div>' +
+      '<div class="ag-range">ช่วงที่คัด: <b>' + dl(MR[0]) + ' ' + (+MR[0].slice(0, 4) + 543) + ' – ' + dl(toD) + ' ' + (+toD.slice(0, 4) + 543) + '</b>' + (toD < MR[1] ? ' <span class="c2-dim">(ถึงวันนี้ · รอบยังไม่จบ)</span>' : '') + ' · ดึงข้อมูลเมื่อ ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + '<div class="ag-cut">นับเฉพาะคอนเทนต์ที่<b>วันที่แรกในชื่อแคมเปญ ตั้งแต่ ' + (function (s) { var p = s.split('-'); return +p[2] + '/' + (+p[1]) + '/' + String(+p[0] + 543).slice(2); })(cutOf(S.m)) + '</b> เป็นต้นไป · เกณฑ์ทักถูกนับในรอบที่ยิงครบวันที่ 5 (ยังไม่ครบภายในวันที่ 25 → ไปรอบถัดไป)' + (R && (R.ex.old || R.ex.none) ? ' <span class="c2-dim">· ไม่นับ ' + R.ex.old + ' ชิ้นที่วันที่ในชื่อเก่ากว่า · ' + R.ex.none + ' ชิ้นที่ไม่มีวันที่ในชื่อ</span>' : '') + (R && R.ex.dup ? ' <span class="c2-dim">· รวมคอนเทนต์ซ้ำ ' + R.ex.dup + ' แคมเปญ (นับชิ้นเดียว · เปลี่ยน ver ถึงนับใหม่)</span>' : '') + '</div></div></div>' +
       '<div class="c2-seg" role="group" aria-label="รอบ">' + MS.map(function (m) { return '<button class="' + (S.m === m ? 'on' : '') + '" onclick="angelV2.set(\'m\',\'' + m + '\')">' + mLabel(m) + '</button>'; }).join('') + '</div></div>';
     h += '<div class="c2-tabs"><button class="' + (S.p < 0 ? 'on' : '') + '" onclick="angelV2.set(\'p\',-1)">ทุกสินค้า</button>' + P.map(function (p, i) { var on = S.p === i; return '<button class="' + (on ? 'on' : '') + '" onclick="angelV2.set(\'p\',' + i + ')"><i style="background:' + (on ? '#fff' : PAL[i % PAL.length]) + '"></i>' + esc(p.product) + '</button>'; }).join('') + '</div>';
     if (!R) {
@@ -185,7 +190,7 @@
       '<input class="ai2-q" type="search" placeholder="ค้นหาแคมเปญ / เพจ / บัญชี" value="' + esc(S.q) + '" oninput="angelV2.q(this.value)"><button class="ai2-btn" onclick="angelV2.csv()">ดาวน์โหลด CSV</button></div>';
     if (S.tab === 'chat') {
       chat.sort(function (a, b) { var ga = a.grade ? 'A+AB'.indexOf(a.grade[0]) : 9, gb = b.grade ? 'A+AB'.indexOf(b.grade[0]) : 9; return (b.done - a.done) || (ga - gb) || (a.cpc - b.cpc); });
-      h += '<div class="c2-card c2-pad"><h2>เกณฑ์ 1 · ต้นทุนทักถูก (ยิงวันแรก–วันที่ 5)</h2><div class="c2-note">นับแคมเปญที่เริ่มยิงระหว่าง <b>' + dl(MR[0]) + ' – ' + dl(toD) + '</b> · ดู 5 วันแรกของแต่ละตัว (คอลัมน์ "ช่วงที่ดู") · ต้นทุนต่อทักรวม 5 วัน ≤ เกณฑ์ และคนทักรวม 5 วัน ≥ ขั้นต่ำ ตามกลุ่มสินค้า</div>';
+      h += '<div class="c2-card c2-pad"><h2>เกณฑ์ 1 · ต้นทุนทักถูก (ยิงวันแรก–วันที่ 5)</h2><div class="c2-note">นับแคมเปญที่ยิงครบวันที่ 5 ระหว่าง <b>' + dl(MR[0]) + ' – ' + dl(MR[1]) + '</b> (เริ่มยิงตั้งแต่ ' + dl(startFrom(S.m)) + ' · ตัวที่ยังไม่ครบภายในวันที่ 25 ไปนับรอบถัดไป) · ดู 5 วันแรกของแต่ละตัว (คอลัมน์ "ช่วงที่ดู") · ต้นทุนต่อทักรวม 5 วัน ≤ เกณฑ์ และคนทักรวม 5 วัน ≥ ขั้นต่ำ ตามกลุ่มสินค้า</div>';
       h += '<div class="c2-scroll"><table class="c2-t ai2-t"><thead><tr><th>เกรด</th><th>แคมเปญ</th><th>สินค้า · เพจ · ผู้ดูแล</th><th>ช่วงที่ดู (วันที่ 1–5)</th><th class="r">ค่าแอด 5 วัน</th><th class="r">คนทัก 5 วัน</th><th class="r">ต้นทุน/ทัก</th><th>เกณฑ์ที่ผ่าน</th><th class="r">ค่าคอม</th></tr></thead><tbody>';
       chat.forEach(function (x, xi) {
         var c = x.c, g = x.grade;
