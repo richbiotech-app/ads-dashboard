@@ -242,10 +242,44 @@
     var s = 0, ch = 0, b = 0; ks.forEach(function (k) { s += days[k].s; ch += days[k].ch; b += days[k].b; });
     return '<div class="iss-meta">ตัวเลข Facebook ของแคมเปญนี้ <b>' + ks.length + ' วัน (' + thr(ks[0], ks[ks.length - 1]) + ')</b> · 7 วันก่อนวันที่แจ้ง: ใช้ <b>฿' + Math.round(s).toLocaleString() + '</b> · ทัก <b>' + Math.round(ch) + '</b>' + (ch ? ' (฿' + Math.round(s / ch) + '/ทัก)' : '') + ' · ซื้อ (FB) <b>' + Math.round(b) + '</b><br><span style="font-size:12px">รายวัน: ' + ks.map(function (k) { return thd(k) + ' ทัก ' + Math.round(days[k].ch); }).join(' · ') + '</span></div>';
   }
+  
+  var ADSC = {}, ADSN = 0;
+  function campName(x) { var name = x.camp || ''; if (!name) { var m0 = ((x.msgs || [])[0] || {}).txt || ''; var mm = /แคมเปญ\s*[:：]\s*([^\n]+)/.exec(m0); if (mm) name = mm[1]; } return String(name).replace(/\s+/g, ' ').trim(); }
+  function adsBox(x) {
+    var nn = campName(x); if (!nn) return '';
+    var hit = {}, raw = '', pages = {};
+    prods().forEach(function (p) { if (x.prod && p.product !== x.prod) return; (p.pages || []).forEach(function (pg) { (pg.accounts || []).forEach(function (a) { (a.adAccounts || []).forEach(function (acc) {
+      ((window.fbDataMap || {})[acc] || []).forEach(function (r) { if (String(r.campaign || '').replace(/\s+/g, ' ').trim() !== nn) return; hit[acc] = 1; raw = raw || r.campaign; pages[pg.name || pg.page || ''] = 1; });
+    }); }); }); });
+    var accs = Object.keys(hit); if (!accs.length) return '';
+    var id = 'issAds' + (++ADSN), pg = Object.keys(pages).filter(Boolean);
+    setTimeout(function () { adsLinks(raw, accs, id); }, 0);
+    return '<div class="iss-meta" style="background:#EFF6FF;border-color:#BFDBFE">' + (pg.length ? 'เพจ: <b>' + esc(pg.join(', ')) + '</b> · ' : '') + 'บัญชี: ' + esc(accs.join(', ')) + '<br><span id="' + id + '">กำลังหาลิงก์โฆษณา…</span></div>';
+  }
+  function adsLinks(name, accs, id) {
+    if (ADSC[name]) { fillAds(id, ADSC[name]); return; }
+    var f = encodeURIComponent(JSON.stringify([{ field: 'campaign.name', operator: 'EQUAL', value: name }]));
+    Promise.all(accs.map(function (acc) {
+      var mt = (window.FB_ACCOUNTS_META || []).filter(function (m) { return m.name === acc; })[0]; if (!mt) return [];
+      return fetch('https://richbiotech-fb-proxy.ads02.workers.dev/v21.0/' + mt.id + '/ads?fields=name,effective_status,preview_shareable_link,creative{effective_object_story_id}&filtering=' + f + '&limit=20&account=' + encodeURIComponent((window.FB_TOKENS || {})[acc] || acc))
+        .then(function (r) { return r.json(); }).then(function (j) { return j.data || []; }).catch(function () { return []; });
+    })).then(function (arr) { var ads = [].concat.apply([], arr); if (ads.length) ADSC[name] = ads; fillAds(id, ads); });
+  }
+  function fillAds(id, ads) {
+    var el = document.getElementById(id); if (!el) return;
+    if (!ads.length) { el.textContent = 'ไม่พบโฆษณาของแคมเปญนี้ใน Facebook (อาจถูกลบ/เปลี่ยนชื่อ)'; return; }
+    var okU = function (u) { return /^https:\/\/(fb\.me|www\.facebook\.com)\//.test(u || ''); }, seen = {}, parts = [];
+    ads.forEach(function (a, i) {
+      if (okU(a.preview_shareable_link)) parts.push('<a href="' + esc(a.preview_shareable_link) + '" target="_blank" rel="noopener" style="font-weight:600">▶ ดูโฆษณา/คลิป' + (ads.length > 1 ? ' ' + (i + 1) : '') + '</a>');
+      var sid = String((a.creative || {}).effective_object_story_id || ''); if (/^\d+_\d+$/.test(sid) && !seen[sid]) { seen[sid] = 1; parts.push('<a href="https://www.facebook.com/' + sid + '" target="_blank" rel="noopener">เปิดโพสต์</a>'); }
+    });
+    el.innerHTML = 'ลิงก์โฆษณา: ' + (parts.join(' · ') || '-');
+  }
   function detailHtml(x) {
     var h = '<div class="iss-ov" onclick="if(event.target===this)issV2.close()"><div class="iss-modal wide" role="dialog" aria-modal="true" aria-label="รายละเอียดเรื่อง"><div class="iss-mh"><div><div class="iss-r1">' + pill(x.status) + dirTag(x.dir) + (x.cat ? '<span class="iss-cat">' + esc(x.cat) + '</span>' : '') + '</div><h2>' + esc(x.title || '(ไม่มีหัวข้อ)') + '</h2><div class="iss-dim">' + (teamOf(x.prod) ? 'ทีม ' + esc(teamOf(x.prod)) + ' · ' : '') + esc([x.prod, x.page].filter(Boolean).join(' › ')) + ' · แจ้งโดย ' + esc(x.by) + ' ' + when(x.t) + '</div></div><button class="iss-x" aria-label="ปิด" onclick="issV2.close()">×</button></div>';
     if (x.camp) h += '<div class="iss-camp">แคมเปญ: ' + esc(x.camp) + '</div>';
     try { h += campRange(x); } catch (e) {}
+    try { h += adsBox(x); } catch (e) {}
     if (x.meta && x.meta.chats) { var m = x.meta; h += '<div class="iss-meta">ตัวเลข 7 วัน (ตอนแจ้ง): ทัก <b>' + Math.round(m.chats) + '</b> · ฿/ทัก <b>' + Math.round(m.cpc) + '</b> (เฉลี่ยสินค้า ' + Math.round(m.avgCpc) + ') · ปิดได้ <b>' + (m.close * 100).toFixed(1) + '%</b> (เฉลี่ย ' + (m.avgClose * 100).toFixed(1) + '%) · ค่าแอด ฿' + Math.round(m.spend).toLocaleString() + '</div>'; }
     h += '<div class="iss-thread">';
     (x.msgs || []).forEach(function (m) {
