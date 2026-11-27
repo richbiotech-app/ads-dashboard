@@ -154,5 +154,17 @@
         "HiaYGame"
       ]
     }
+  },
+  "THE LORD||The Lord สูตรลับนายท่าน||Tonkar Napatsdoln": {
+    "reason": "disabled",
+    "ts": 1795761403875,
+    "meta": {
+      "product": "THE LORD",
+      "page": "The Lord สูตรลับนายท่าน",
+      "name": "Tonkar Napatsdoln",
+      "adAccounts": [
+        "TonkarNapatsdoln"
+      ]
+    }
   }
 }
