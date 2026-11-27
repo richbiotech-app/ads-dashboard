@@ -89,6 +89,96 @@
       ],
       "updatedAt": "2026-11-24T03:06:05.361Z",
       "updatedBy": "นรุตม์ชัย นาควิจิตร"
+    },
+    "2026-12": {
+      "items": [
+        {
+          "product": "THE LORD",
+          "who": "ปาย",
+          "target": 1000000,
+          "ads": 58,
+          "cac": 0
+        },
+        {
+          "product": "JUDO",
+          "who": "ปาย",
+          "target": 1000000,
+          "ads": 58,
+          "cac": 0
+        },
+        {
+          "product": "Sopink",
+          "who": "พิม",
+          "target": 1000000,
+          "ads": 51,
+          "cac": 0
+        },
+        {
+          "product": "Wolf",
+          "who": "พิม",
+          "target": 1250000,
+          "ads": 51,
+          "cac": 0
+        },
+        {
+          "product": "เจ้าขุน",
+          "who": "มอส",
+          "target": 855000,
+          "ads": 58,
+          "cac": 0
+        },
+        {
+          "product": "OlymplusMax",
+          "who": "ปาย",
+          "target": 90000,
+          "ads": 40,
+          "cac": 0
+        },
+        {
+          "product": "Heavenplus+",
+          "who": "ปาย",
+          "target": 400000,
+          "ads": 50,
+          "cac": 0
+        },
+        {
+          "product": "Olymplus",
+          "who": "ปาย",
+          "target": 1500000,
+          "ads": 40,
+          "cac": 0
+        },
+        {
+          "product": "LIV CARE",
+          "who": "ปาย",
+          "target": 120000,
+          "ads": 60,
+          "cac": 0
+        },
+        {
+          "product": "BLING&SYN",
+          "who": "ปาย",
+          "target": 100000,
+          "ads": 65,
+          "cac": 0
+        },
+        {
+          "product": "Dragon Blood",
+          "who": "มอส",
+          "target": 350000,
+          "ads": 65,
+          "cac": 0
+        },
+        {
+          "product": "ขุนแผน",
+          "who": "บุ๋มบิ๋ม",
+          "target": 5000000,
+          "ads": 50,
+          "cac": 0
+        }
+      ],
+      "updatedAt": "2026-11-27T09:57:22.086Z",
+      "updatedBy": "Claude (ตามที่นรุตม์ชัยสั่ง)"
     }
   },
   "_history": [
@@ -121,6 +211,12 @@
       "by": "นรุตม์ชัย นาควิจิตร",
       "month": "2026-11",
       "txt": "เป้าพ.ย. 2569: บันทึก (ไม่มีการเปลี่ยน)"
+    },
+    {
+      "t": "2026-11-27T09:57:22.086Z",
+      "by": "Claude",
+      "month": "2026-12",
+      "txt": "ตั้งเป้า ธ.ค. 2569 ตามตารางเป้าค่าคอมเดือน 12 รวม CS (12 สินค้า · ยอดยิงรวม 12,665,000 · ยอดขายรวม ~25.0M)"
     }
   ],
   "_casper": {
