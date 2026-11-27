@@ -142,5 +142,17 @@
         "JaenSpikehold"
       ]
     }
+  },
+  "THE LORD||The Lord สูตรลับนายท่าน||เหี้ย'ย เกมส์": {
+    "reason": "disabled",
+    "ts": 1795761392484,
+    "meta": {
+      "product": "THE LORD",
+      "page": "The Lord สูตรลับนายท่าน",
+      "name": "เหี้ย'ย เกมส์",
+      "adAccounts": [
+        "HiaYGame"
+      ]
+    }
   }
 }
